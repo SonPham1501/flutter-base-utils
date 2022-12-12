@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:intl/intl.dart';
 
 class DateTimeUtil {
@@ -35,16 +37,16 @@ class DateTimeUtil {
 
   static String? getDateShowWithString(String? dateTime) {
     if (dateTime == null) return '';
-    var _dateTime = DateTime.tryParse(dateTime);
-    if (_dateTime == null) return '';
-    return dateTimeToString(_dateTime, "dd/MM/yyyy");
+    var dt = DateTime.tryParse(dateTime);
+    if (dt == null) return '';
+    return dateTimeToString(dt, "dd/MM/yyyy");
   }
 
   static String? getDateTimeShowWithString(String? dateTime) {
     if (dateTime == null) return '';
-    var _dateTime = DateTime.tryParse(dateTime);
-    if (_dateTime == null) return '';
-    return dateTimeToString(_dateTime, "HH:mm dd/MM/yyyy");
+    var dt = DateTime.tryParse(dateTime);
+    if (dt == null) return '';
+    return dateTimeToString(dt, "HH:mm dd/MM/yyyy");
   }
 
   static String? getDateTimeServerToDate(DateTime? dateTime) {
@@ -87,58 +89,33 @@ class DateTimeUtil {
   }
 
   static String? getDateTimeTHG(String? dateTimeString) {
-    if (dateTimeString == null) return "";
-    if (dateTimeString.isEmpty) return "";
+    if (dateTimeString == null || dateTimeString.isEmpty) return "";
     var dateTime = stringToDateTime(dateTimeString, "yyyy-MM-dd'T'HH:mm:ss");
     return getFullDate(dateTime);
   }
 
   static String? getFullDate(DateTime? dateTime) {
     if (dateTime == null) return null;
-    return dateTime.day.toString() + " thg " + dateTime.month.toString() + ", " + dateTime.year.toString();
+    return "${dateTime.day} thg ${dateTime.month}, ${dateTime.year}";
   }
 
   static String? getFullDateAndTime(DateTime? dateTime) {
     if (dateTime == null) return null;
-    return dateTime.day.toString() +
-        "/" +
-        dateTime.month.toString() +
-        "/" +
-        dateTime.year.toString() +
-        " - " +
-        dateTime.hour.toString() +
-        ":" +
-        dateTime.minute.toString();
+    return "${dateTime.day}/${dateTime.month}/${dateTime.year} - ${dateTime.hour}:${dateTime.minute}";
   }
 
   static String? getFullDateAndTimeSecond(DateTime? dateTime) {
     if (dateTime == null) return null;
-    return dateTime.day.toString() +
-        "/" +
-        dateTime.month.toString() +
-        "/" +
-        dateTime.year.toString() +
-        " - " +
-        dateTime.hour.toString() +
-        ":" +
-        dateTime.minute.toString() +
-        ":" +
-        dateTime.second.toString();
+    return "${dateTime.day}/${dateTime.month}/${dateTime.year} - ${dateTime.hour}:${dateTime.minute}:${dateTime.second}";
   }
 
   static String getFullTime(DateTime dateTime) {
-    return dateTime.hour.toString() + " : " + dateTime.minute.toString();
+    return "${dateTime.hour} : ${dateTime.minute}";
   }
 
   static String? getFullDateTime(DateTime? dateTime) {
     if (dateTime == null) return null;
-    return dateTime.day.toString() +
-        " thg " +
-        dateTime.month.toString() +
-        ", " +
-        dateTime.year.toString() +
-        ", " +
-        dateTimeToString(dateTime, "HH:mm:ss")!;
+    return "${dateTime.day} thg ${dateTime.month}, ${dateTime.year}, ${dateTimeToString(dateTime, "HH:mm:ss")!}";
   }
 
   static DateTime getDateTimeStartDay(DateTime dateTime) {
@@ -293,18 +270,18 @@ class DateTimeUtil {
       time = "Hôm nay";
     } else if (diff.inDays > 0 && diff.inDays < 7) {
       if (diff.inDays == 1) {
-        time = diff.inDays.toString() + ' Ngày trước';
+        time = '${diff.inDays} Ngày trước';
       } else {
-        time = diff.inDays.toString() + ' Ngày trước';
+        time = '${diff.inDays} Ngày trước';
       }
     } else if (diff.inDays > 365) {
       // return "${(diff.inDays / 365).floor()} ${(diff.inDays / 365).floor() == 1 ? "year" : "years"} ago";
       time = "${(diff.inDays / 365).floor()} inday ${diff.inDays}";
     } else {
       if (diff.inDays == 7) {
-        time = (diff.inDays / 7).floor().toString() + ' Tuần trước';
+        time = '${(diff.inDays / 7).floor()} Tuần trước';
       } else {
-        time = (diff.inDays / 7).floor().toString() + ' Tuần trước';
+        time = '${(diff.inDays / 7).floor()} Tuần trước';
       }
     }
 
@@ -346,10 +323,10 @@ class DateTimeUtil {
       timeUnit = 'năm';
     }
 
-    timeAgo = timeValue.toString() + ' ' + timeUnit;
+    timeAgo = '$timeValue $timeUnit';
     timeAgo += timeValue > 1 ? '' : '';
 
-    return timeAgo + ' trước';
+    return '$timeAgo trước';
   }
 
   static String displayTimeAgoFromTimestampMonth(String timestamp) {
@@ -389,9 +366,9 @@ class DateTimeUtil {
       return "${getDateTimeToDate(videoDate)}";
     }
 
-    timeAgo = timeValue.toString() + ' ' + timeUnit;
+    timeAgo = '$timeValue $timeUnit';
     timeAgo += timeValue > 1 ? '' : '';
 
-    return timeAgo + ' trước';
+    return '$timeAgo trước';
   }
 }

@@ -1,6 +1,6 @@
+// ignore_for_file: constant_identifier_names, file_names
 
-// ignore_for_file: constant_identifier_names
-
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
@@ -8,19 +8,19 @@ class SecureStorageUtil {
   static const Token = 'token';
   static const TemporallyToken = 'temporally_token';
   static String? deviceId;
-  static String Key_DeviceId = "deviceId";
+  static String keyDeviceId = "deviceId";
   static var uuid = const Uuid();
 
   static Future init() async {
     //print("==============================uuid============================== $id");
-    if (!await checkKey(Key_DeviceId)) {
+    if (!await checkKey(keyDeviceId)) {
       var id = uuid.v4();
       deviceId = id;
-      createString(Key_DeviceId, deviceId!);
+      createString(keyDeviceId, deviceId!);
     } else {
-      deviceId = await getString(Key_DeviceId);
+      deviceId = await getString(keyDeviceId);
     }
-    print("==============================deviceId============================== $deviceId");
+    debugPrint("==============================deviceId============================== $deviceId");
   }
 
   //String

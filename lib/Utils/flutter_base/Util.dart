@@ -1,7 +1,12 @@
+// ignore_for_file: file_names, depend_on_referenced_packages, library_private_types_in_public_api
+
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:base_extends/Extends/export_extends.dart';
+import 'package:clipboard/clipboard.dart';
 import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' as material;
@@ -11,11 +16,16 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:html/parser.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:share/share.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:uuid/uuid.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
-import '../../../base.dart';
+import 'DialogUtil.dart';
+import 'SecureStorageUtil.dart';
 
 export 'DateTimeUtil.dart';
 export 'PreferUtil.dart';
@@ -24,23 +34,6 @@ typedef VoidOnAction = void Function();
 typedef VoidOnActionInt = void Function(int value);
 
 class Util {
-
-  static Future pulishLogError({
-    String userName = "No USERNAME",
-    String body = "No BODY",
-    String url = "No URL",
-    required String messageError,
-  }) async {
-    await FirebaseService.insert(
-      userName: userName,
-      logError: LogError(
-        date: DateTime.now().toString(),
-        messageError: 'result.exception: $messageError',
-        body: body,
-        url: url,
-      ),
-    );
-  }
 
   static String getUuid() {
     return const Uuid().v4();
@@ -81,8 +74,7 @@ class Util {
   }
 
   static bool isEmail(String em) {
-    String p =
-        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
+    String p = r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
     RegExp regExp = RegExp(p);
     return regExp.hasMatch(em);
   }
@@ -95,14 +87,11 @@ class Util {
 
   static void printWrapped(String text) {
     final pattern = RegExp('.{1,500}'); // 800 is the size of each chunk
-    pattern.allMatches(text).forEach((match) => print(match.group(0)));
+    pattern.allMatches(text).forEach((match) => debugPrint(match.group(0)));
   }
 
   static bool checkNewVersionWithOldVersion({required String oldVersion, required String newVersion}) {
-    if (oldVersion.isEmpty) {
-      return false;
-    }
-    if (newVersion.isEmpty) {
+    if (oldVersion.isEmpty || newVersion.isEmpty) {
       return false;
     }
     var arrayOld = oldVersion.split(".");
@@ -244,7 +233,7 @@ class Util {
   static String getFullName(String? firstName, String? lastName) {
     lastName = lastName ?? "";
     firstName = firstName ?? "";
-    var fullName = lastName.trim() + " " + firstName.trim();
+    var fullName = "${lastName.trim()} ${firstName.trim()}";
     return fullName.trim();
   }
 
@@ -257,27 +246,27 @@ class Util {
     return initials;
   }
 
-  static void showToast(String message, {bool status = true}) {
+  static void showToast(BuildContext context, String message, {bool status = true}) {
     Fluttertoast.cancel();
     Fluttertoast.showToast(
       msg: message,
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.BOTTOM,
       backgroundColor: (status
-        ? Theme.of(navigationService.context).primaryColor
-        : Theme.of(navigationService.context).errorColor),
+        ? Theme.of(context).primaryColor
+        : Theme.of(context).errorColor),
       fontSize: 12,
     );
   }
 
-  static void showToastCenter(String message, {bool status = true}) {
+  static void showToastCenter(BuildContext context, String message, {bool status = true}) {
     Fluttertoast.showToast(
       msg: message,
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.CENTER,
       backgroundColor: (status
-        ? Theme.of(navigationService.context).primaryColor
-        : Theme.of(navigationService.context).errorColor),
+        ? Theme.of(context).primaryColor
+        : Theme.of(context).errorColor),
       fontSize: 12,
     );
   }
@@ -299,17 +288,16 @@ class Util {
   static String intToAreaDouble(dynamic price) {
     if (price == null) return '';
     return NumberFormat.currency(locale: 'eu', decimalDigits: 2, symbol: '').format(price).replaceAll(',00', '');
-    final oCcy = NumberFormat("#,##0.00", "VN");
-    var string = oCcy.format(price);
-    return string;
+    // final oCcy = NumberFormat("#,##0.00", "VN");
+    // var string = oCcy.format(price);
+    // return string;
   }
 
   static String getUrlInString(String text) {
-    final urlRegExp = RegExp(
-        r"((https?:www\.)|(https?:\/\/)|(www\.))[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9]{1,6}(\/[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)?");
+    final urlRegExp = RegExp(r"((https?:www\.)|(https?:\/\/)|(www\.))[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9]{1,6}(\/[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)?");
     Iterable<RegExpMatch> matches = urlRegExp.allMatches(text);
     String url = matches.isEmpty ? '' : text.substring(matches.first.start, matches.first.end);
-    return !url.contains('http') && url.isNotEmpty ? 'https://' + url : url;
+    return !url.contains('http') && url.isNotEmpty ? 'https://$url' : url;
   }
 
   static bool getTagInString(String text) {
@@ -317,20 +305,20 @@ class Util {
     return urlRegExp.hasMatch(text);
   }
 
-  static openURL(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      Util.showToast("Error");
+  static openURL(BuildContext context, String url) async {
+    try {
+      await launchURL(url);
+    } catch (e) {
+      Util.showToast(context, e.toString(), status: false);
     }
   }
 
-  static callPhoneNumber(String phoneNumber) async {
-    var url = 'tel:' + phoneNumber;
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      Util.showToast("Error");
+  static callPhoneNumber(BuildContext context, String phoneNumber) async {
+    var url = 'tel:$phoneNumber';
+    try {
+      await launchURL(url);
+    } catch (e) {
+      Util.showToast(context, e.toString(), status: false);
     }
   }
 
@@ -347,11 +335,9 @@ class Util {
   }
 
   static launchURL(String url, {Map<String, String>? headers}) async {
-    if (!url.contains('http')) url = 'http://' + url;
-    if (await canLaunch(url)) {
-      await launch(
-        url,
-      );
+    if (!url.contains('http')) url = 'http://$url';
+    if (await canLaunchUrlString(url)) {
+      await launchUrl(Uri.parse(url));
     } else {
       throw 'Could not launch $url';
     }
@@ -373,7 +359,7 @@ class Util {
 //    return youtubeId;
 //  }
 
-  //bỏ dấu tiếng viejt
+  //bỏ dấu tiếng việt
   static String nonUnicode(String text) {
     var textNew = text;
     var arr1 = [
@@ -607,7 +593,7 @@ class Util {
   }
 
   static Future<String?> getDeviceIdentifier() async {
-    String identifier;
+    // String identifier;
     final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
     try {
       if (Platform.isAndroid) {
@@ -615,18 +601,18 @@ class Util {
         //identifier = build.androidId; //UUID for Android
         return build.androidId;
       } else if (Platform.isIOS) {
-//        var data = await deviceInfoPlugin.iosInfo;
-//        identifier = data.identifierForVendor; //UUID for iOS
+       // var data = await deviceInfoPlugin.iosInfo;
+       // identifier = data.identifierForVendor; //UUID for iOS
         return SecureStorageUtil.deviceId ?? "";
       }
     } on PlatformException {
-      print('Failed to get platform version');
+      debugPrint('Failed to get platform version');
     }
     //print('identifier= ' + identifier);
     return null;
   }
 
-  //kiểm tra chữ bắt đầu trong đoạn text: Ví dụ: check chữ Dung có ở đầu câu DungDepTrai không
+  //kiểm tra chữ bắt đầu trong đoạn text: Ví dụ: check chữ SON có ở đầu câu ThuyYeuSon không
   static bool checkTextBegin(String? textBegin, String? textFull) {
     if (textBegin == null || textFull == null) return false;
     if (textBegin.length >= textFull.length) return textBegin == textFull;
@@ -636,15 +622,15 @@ class Util {
 
   //kiểm tra text này có phải url không
   static bool isValidUrl(String url) {
-    bool _validURL = Uri.parse(url).isAbsolute;
-    return _validURL;
+    bool validURL = Uri.parse(url).isAbsolute;
+    return validURL;
   }
 
   //lấy random String theo số lượng ký tự
   static getRandomString({required int length}) {
-    const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
-    Random _rnd = Random();
-    return String.fromCharCodes(Iterable.generate(length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+    const chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+    Random rnd = Random();
+    return String.fromCharCodes(Iterable.generate(length, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))));
   }
 
   static String getFileExtension({required String fileName}) {
@@ -652,7 +638,7 @@ class Util {
   }
 
   static String getFileNameInPath({required String path}) {
-    return basename(path);
+    return p.basename(path);
   }
 
   static _UserNameInfo getFirstLastName(String fullName) {
@@ -674,7 +660,7 @@ class Util {
     if (url.contains("youtu.be")) {
       var array = url.split("youtu.be/");
       if (array.length > 1) {
-        print("Youtube Id: ${array[1]}");
+        debugPrint("Youtube Id: ${array[1]}");
         return array[1];
       }
     }
@@ -699,8 +685,8 @@ class Util {
   }
 
   static String convertVNtoEN(final String text) {
-    String _vietnamese = 'aAeEoOuUiIdDyY^^';
-    dynamic _vietnameseRegex = <RegExp>[
+    String vietnamese = 'aAeEoOuUiIdDyY^^';
+    dynamic vietnameseRegex = <RegExp>[
       RegExp(r'à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ'),
       RegExp(r'À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ'),
       RegExp(r'è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ'),
@@ -720,12 +706,10 @@ class Util {
     ];
 
     var result = text;
-    if (result is String) {
-      for (var i = 0; i < _vietnamese.length; ++i) {
-        result = result.replaceAll(_vietnameseRegex[i], _vietnamese[i]);
-      }
-      result = result.replaceAll("^", "");
+    for (var i = 0; i < vietnamese.length; ++i) {
+      result = result.replaceAll(vietnameseRegex[i], vietnamese[i]);
     }
+    result = result.replaceAll("^", "");
     return result;
   }
 
@@ -774,11 +758,11 @@ class Util {
       File file = File(path);
       final Uint8List bytes = await file.readAsBytes();
       String img64 = base64UrlEncode(bytes);
-      String type = extension(file.path).split('.')[1];
+      String type = p.extension(file.path).split('.')[1];
       String imgCode = 'data:image/$type;base64,$img64';
       return imgCode;
     } catch (e) {
-      print(e);
+      debugPrint(e.toString());
       return '';
     }
   }
@@ -816,16 +800,16 @@ class Util {
       }
       return result;
     } catch (e, t) {
-      print(t);
+      debugPrint(t.toString());
       return File(path);
     }
   }
 
   //thoát số màn hình
-  static void popCountScreen(int countScreen, { Object? result }) {
+  static void popCountScreen(BuildContext context, int countScreen, { Object? result }) {
     int count = 0;
     while (count < countScreen) {
-      Navigator.of(navigationService.context).pop(result);
+      Navigator.of(context).pop(result);
       count++;
     }
   }
@@ -845,9 +829,154 @@ class Util {
         || ((polygon[j].latitude <= l.latitude)
         && (l.latitude < polygon[i].latitude))) 
         && (l.longitude < (polygon[j].longitude - polygon[i].longitude) * (l.latitude - polygon[i].latitude)
-          /(polygon[j].latitude - polygon[i].latitude) + polygon[i].longitude)) isInPolygon = !isInPolygon;
+        /(polygon[j].latitude - polygon[i].latitude) + polygon[i].longitude)) isInPolygon = !isInPolygon;
     }
     return isInPolygon;
+  }
+
+  static String formatMoney(dynamic money) {
+    if (money == null) {
+      return "";
+    } else if (money is String) {
+      if (money.toInt() != null) {
+        return Util.intToPriceDouble(money.toInt()!).replaceAll(".", ",");
+      } else if (money.toDouble() != null) {
+        return Util.intToPriceDouble(money.toDouble()!).replaceAll(".", ",");
+      }
+    } else if (money is double) {
+      return Util.intToPriceDouble(money).replaceAll(".", ",");
+    } else if (money is int) {
+      return Util.intToPriceDouble(money).replaceAll(".", ",");
+    }
+    return "0";
+  }
+
+  static String convertMoney(
+    double? value, {
+    isDetail = false, //show chi tiết về đơn vị hay không
+  }) {
+    if (value == null) {
+      return "";
+    }
+    var b = " tỷ";
+    var m = " tr";
+    var k = " ng";
+    var unit = " ";
+    if (isDetail) {
+      b = " tỷ";
+      m = " triệu";
+      k = " nghìn";
+      unit = " đ";
+    }
+
+    var price = value.toInt();
+    var priceView = "";
+    if (price >= 1000000000) {
+      var priceNew = price / 1000000000;
+      var priceString = priceNew.toRound(2).toStringRound();
+      priceView = "$priceString$b";
+    } else if (price >= 1000000) {
+      var priceNew = price / 1000000;
+      var priceString = priceNew.toRound(2).toStringRound();
+      priceView = "$priceString$m";
+    } else if (price >= 1000) {
+      var priceNew = price / 1000;
+      var priceString = priceNew.toRound(2).toStringRound();
+
+      priceView = "$priceString$k";
+    } else {
+      priceView = "$price$unit";
+    }
+    return priceView;
+  }
+
+  static void share({
+    String? title,
+    String? subject,
+  }) {
+    Share.share(title ?? "", subject: subject ?? "SON");
+  }
+
+  static void copy(BuildContext context, String content, {String? message}) {
+    FlutterClipboard.copy(content).then((value) => Util.showToast(context, message ?? "Sao chép thành công"));
+  }
+
+  static String getTimeAgo(DateTime? dateTime) {
+    if (dateTime == null) {
+      return "";
+    }
+    return timeago.format(dateTime, locale: "vi_short");
+  }
+
+  //Tạo file
+  static creatFile(String fileName) async {
+    final File file = File('$localPath$fileName');
+    return file;
+  }
+
+  static Future<String> get localPath async {
+    String pathss;
+    if (Platform.isAndroid) {
+      final temDirkAndroid = await getExternalStorageDirectory();
+      pathss = temDirkAndroid!.path;
+    } else {
+      final temDirkIos = await getApplicationDocumentsDirectory();
+      pathss = temDirkIos.path;
+    }
+    return pathss;
+  }
+
+  static Future<File> localFile(String fileName) async {
+    final path = await localPath;
+    return File('$path$fileName');
+  }
+
+  //Xoá file
+  static Future<int> deleteFile(String fileName) async {
+    try {
+      final file = await localFile(fileName);
+      await file.delete();
+    } catch (e) {
+      return 0;
+    }
+    return 1;
+  }
+
+  //Kiểm tra file có tồn tại chưa
+  static Future<bool> checkFileExist(String fileName) async {
+    try {
+      if (await Directory("$localPath$fileName").exists()) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      debugPrint('e  eee $e');
+      return false;
+    }
+  }
+
+  //Đọc file
+  static Future<String> readFile(String fileName) async {
+    try {
+      final file = await localFile(fileName);
+      final contents = await file.readAsString();
+      return contents;
+    } catch (e) {
+      debugPrint('readErrrrrrrrrrrrrrrrrrrrrr  $e');
+      return "";
+    }
+  }
+
+  //Viết dữ liệu vào file
+  static Future<bool> writeFile(file, String text) async {
+    try {
+      await file.writeAsString(text);
+      return true;
+    } catch (e) {
+      debugPrint('readErrrrrrrrrrrrrrrrrrrrrr  $e');
+      return false;
+    }
   }
 
 }

@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -58,7 +60,7 @@ class PreferUtil {
     return value;
   }
 
-  //Double
+  //Boolean
   static Future createBool(String key, bool boolValue) async {
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey(key)) {
@@ -124,14 +126,14 @@ class PreferUtil {
   static String _getKey(String key, {bool isSecure = false, String? userId}) {
     if (isSecure) {
       var keyString = "k_$keySecure${userId ?? ""}$key";
-      return "s_" + md5.convert(utf8.encode(keyString)).toString();
+      return "s_${md5.convert(utf8.encode(keyString))}";
     }
     return key;
   }
 
   static String _getKeyCrypt(String key, {String? userId = ""}) {
     var keyString = "$keySecure${userId ?? ""}$key";
-    return "k_" + md5.convert(utf8.encode(keyString)).toString();
+    return "k_${md5.convert(utf8.encode(keyString))}";
   }
 
   static String? _valueEncrypt(String key, String stringValue, {bool isSecure = false, String? userId}) {

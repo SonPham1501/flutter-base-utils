@@ -4,26 +4,41 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:base_extends/Extends/StringExtend.dart';
 import 'package:crypto/crypto.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:encrypt/encrypt.dart' as en;
 import 'package:tuple/tuple.dart';
 
 
 class CryptoUtil{
 
-  static String? encryptAESCryptoJS(String plainText, String passphrase) {
+  static String passwordCryptor = "";
 
+  static String encrypt({required String plainText, String? password}) {
+    final key = en.Key.fromUtf8(password ?? passwordCryptor);
+    final iv = en.IV.fromLength(16);
+    final encryptor = en.Encrypter(en.AES(key, mode: en.AESMode.cbc));
+    final encrypted = encryptor.encrypt(plainText.base64Encode(), iv: iv);
+    return encrypted.base64;
+  }
+
+  static String decrypt({required String plainText, String? password}) {
+    final key = en.Key.fromUtf8(password ?? passwordCryptor);
+    final iv = en.IV.fromLength(16);
+    final encryptor = en.Encrypter(en.AES(key, mode: en.AESMode.cbc));
+    return encryptor.decrypt64(plainText, iv: iv);
+  }
+
+  static String? encryptAESCryptoJS(String plainText, String passphrase) {
     try {
       final salt = genRandomWithNonZero(8);
       var keyndIV = deriveKeyAndIV(passphrase, salt);
-      final key = encrypt.Key(keyndIV.item1);
-      final iv = encrypt.IV(keyndIV.item2);
+      final key = en.Key(keyndIV.item1);
+      final iv = en.IV(keyndIV.item2);
 
-      final encrypter = encrypt.Encrypter(
-          encrypt.AES(key, mode: encrypt.AESMode.cbc, padding: "PKCS7"));
+      final encrypter = en.Encrypter(en.AES(key, mode: en.AESMode.cbc, padding: "PKCS7"));
       final encrypted = encrypter.encrypt(plainText, iv: iv);
-      Uint8List encryptedBytesWithSalt = Uint8List.fromList(
-          createUint8ListFromString("Salted__") + salt + encrypted.bytes);
+      Uint8List encryptedBytesWithSalt = Uint8List.fromList(createUint8ListFromString("Salted__") + salt + encrypted.bytes);
       return base64.encode(encryptedBytesWithSalt);
     } catch (error) {
       return null;
@@ -38,13 +53,11 @@ class CryptoUtil{
       encryptedBytesWithSalt.sublist(16, encryptedBytesWithSalt.length);
       final salt = encryptedBytesWithSalt.sublist(8, 16);
       var keyndIV = deriveKeyAndIV(passphrase, salt);
-      final key = encrypt.Key(keyndIV.item1);
-      final iv = encrypt.IV(keyndIV.item2);
+      final key = en.Key(keyndIV.item1);
+      final iv = en.IV(keyndIV.item2);
 
-      final encrypter = encrypt.Encrypter(
-          encrypt.AES(key, mode: encrypt.AESMode.cbc, padding: "PKCS7"));
-      final decrypted =
-      encrypter.decrypt64(base64.encode(encryptedBytes), iv: iv);
+      final encrypter = en.Encrypter(en.AES(key, mode: en.AESMode.cbc, padding: "PKCS7"));
+      final decrypted = encrypter.decrypt64(base64.encode(encryptedBytes), iv: iv);
       return decrypted;
     } catch (error) {
       return null;
@@ -59,7 +72,7 @@ class CryptoUtil{
     Uint8List preHash = Uint8List(0);
 
     while (!enoughBytesForKey) {
-      int preHashLength = currentHash.length + password.length + salt.length;
+      // int preHashLength = currentHash.length + password.length + salt.length;
       if (currentHash.isNotEmpty) {
         preHash = Uint8List.fromList(
             currentHash + password + salt);

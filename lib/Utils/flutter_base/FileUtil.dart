@@ -5,6 +5,6 @@ class FileUtil{
   static void init()async
   {
     var appDocDir = await getApplicationDocumentsDirectory();
-    appDocumentPath = appDocDir.path + "/";
+    appDocumentPath = "${appDocDir.path}/";
   }
 }

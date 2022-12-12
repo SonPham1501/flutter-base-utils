@@ -1,4 +1,5 @@
-import 'package:base/src/Extends/StringExtend.dart';
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -24,12 +25,12 @@ class CommaTextInputFormatter extends TextInputFormatter {
 
 //Chỉ nhận số nguyên dương
 //WhitelistingTextInputFormatter.digitsOnly
-TextInputFormatter NumberTextInputFormatter() {
+TextInputFormatter numberTextInputFormatter() {
   return FilteringTextInputFormatter.allow(RegExp(r'[0-9]'));
 }
 
 //Chỉ nhận số có 1 dấu .
-TextInputFormatter NumberTextInputFormatterDoubleOnly() {
+TextInputFormatter numberTextInputFormatterDoubleOnly() {
 //  FilteringTextInputFormatter.allow(RegExp(r"[0-9.]"));
   return TextInputFormatter.withFunction((oldValue, newValue) {
     try {
@@ -37,7 +38,7 @@ TextInputFormatter NumberTextInputFormatterDoubleOnly() {
       TextSelection newSelection = newValue.selection;
       if (text.isNotEmpty) double.parse(text);
       return TextEditingValue(text: text, selection: newSelection);
-    } catch (e) {}
+    } catch (_) {}
     return oldValue;
   });
 }
@@ -62,8 +63,7 @@ TextInputFormatter NumberTextInputFormatterDoubleOnly() {
 // }
 
 //Giới hạn ký tự MaxLenght
-class LengthLimitingTextFieldFormatterFixed
-    extends LengthLimitingTextInputFormatter {
+class LengthLimitingTextFieldFormatterFixed extends LengthLimitingTextInputFormatter {
   LengthLimitingTextFieldFormatterFixed(int? maxLength) : super(maxLength);
 
   @override
@@ -89,37 +89,35 @@ class LengthLimitingTextFieldFormatterFixed
 //định dạng tiền
 class CurrencyTextInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     // remove characters to convert the value to double (because one of those may appear in the keyboard)
     String newText = newValue.text
-        .replaceAll('.', '')
-        .replaceAll(',', '')
-        .replaceAll('_', '')
-        .replaceAll('-', '');
+      .replaceAll('.', '')
+      .replaceAll(',', '')
+      .replaceAll('_', '')
+      .replaceAll('-', '');
     String value = newText;
     int cursorPosition = newText.length;
     if (newText.isNotEmpty) {
-      value = Util.intToPriceDouble(newText.toInt());
+      value = Util.intToPriceDouble(int.parse(newText));
       cursorPosition = value.length;
     }
     return TextEditingValue(
-        text: value,
-        selection: TextSelection.collapsed(offset: cursorPosition));
+      text: value,
+      selection: TextSelection.collapsed(offset: cursorPosition));
   }
 }
 
 //Định dạng số dương
 class PositiveNumbersTextInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     // remove characters to convert the value to double (because one of those may appear in the keyboard)
     String newText = newValue.text
-        .replaceAll('.', '')
-        .replaceAll(',', '')
-        .replaceAll('_', '')
-        .replaceAll('-', '');
+      .replaceAll('.', '')
+      .replaceAll(',', '')
+      .replaceAll('_', '')
+      .replaceAll('-', '');
     String value = newText;
     int cursorPosition = newText.length;
 
@@ -127,13 +125,11 @@ class PositiveNumbersTextInputFormatter extends TextInputFormatter {
       if (newValue.text.contains(",")) {
         newText = newValue.text.replaceFirst(RegExp(','), '.');
       }
-      value = newText.toDouble() == null
-          ? ""
-          : Util.doubleToString(newText.toDouble()!);
+      value = Util.doubleToString(double.parse(newText));
       cursorPosition = value.length;
     }
     return TextEditingValue(
-        text: value,
-        selection: TextSelection.collapsed(offset: cursorPosition));
+      text: value,
+      selection: TextSelection.collapsed(offset: cursorPosition));
   }
 }
