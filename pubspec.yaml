@@ -1,7 +1,7 @@
 name: base_utils
 description: A new Flutter package project.
 version: 0.0.1
-homepage:
+homepage: "https://github.com/SonPham1501/flutter-base-utils.git"
 
 environment:
   sdk: ">=2.17.6 <3.0.0"
